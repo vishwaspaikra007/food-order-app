@@ -1,0 +1,3 @@
+Node Version :- 20.10.0
+installs:
+npm i express nodemon cors ts-node-dev typescript @types/express @types/cors
