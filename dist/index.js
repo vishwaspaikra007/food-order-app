@@ -15,11 +15,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ExpressApp_1 = __importDefault(require("./services/ExpressApp"));
 const Database_1 = __importDefault(require("./services/Database"));
+const config_1 = require("./config");
 const StartServer = () => __awaiter(void 0, void 0, void 0, function* () {
     const app = (0, express_1.default)();
     yield (0, Database_1.default)();
     yield (0, ExpressApp_1.default)(app);
-    const PORT = process.env.PORT || 3000;
+    const PORT = config_1.config.PORT || 3000;
     app.listen(PORT, () => [
         console.log(`app is listening on port: ${PORT}`)
     ]);
