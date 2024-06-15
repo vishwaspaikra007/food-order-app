@@ -1,3 +1,4 @@
 .env
 images/
+# anywhere in .gitignore
 node_modules
