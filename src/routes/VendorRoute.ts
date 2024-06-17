@@ -31,6 +31,12 @@ router.patch('/coverimage', images, UpdateVendorCoverImage)
 router.post('/food', images, AddFood)
 router.get('/food', GetFood)
 
+// Orders
+
+router.get('/orders')
+router.put('/orders/:id/process')
+router.get('/orders/:id')
+
 router.get('/', (req, res, next) => {
     res.json({message: "vendor block"})
 })

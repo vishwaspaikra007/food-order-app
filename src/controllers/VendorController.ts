@@ -165,4 +165,4 @@ export const GetFood = async (req: Request, res: Response, next: NextFunction) =
     }
     
     return res.json({message: "Food information not found"})
-}
+}   

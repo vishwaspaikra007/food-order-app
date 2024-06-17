@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { config } from '../config'
 import { Request } from 'express'
 import { AuthPayLoad } from '../dto/Auto.dto'
+import crypto from 'crypto'
 
 export const GenerateSalt = async () => {
     return await bcrypt.genSalt()
@@ -32,4 +33,8 @@ export const ValidateSignature = (req: Request) => {
 
         return true
     }
+}
+
+export const randomNum = (bit: number, enc: BufferEncoding) => {
+    return crypto.randomBytes(bit).toString(enc)
 }

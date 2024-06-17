@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { plainToClass } from "class-transformer";
 import { validate, ValidationError } from "class-validator";
-import { CreateCustomInputs, EditCustomProfileInputs, UserLoginInputs } from "../dto/Customer.dto";
-import { GeneratePassword, GenerateSalt, GenerateSignature, ValidatePassword } from "../utility/PasswordUtlility";
+import { CreateCustomInputs, EditCustomProfileInputs, OrderInputs, UserLoginInputs } from "../dto/Customer.dto";
+import { GeneratePassword, GenerateSalt, GenerateSignature, randomNum, ValidatePassword } from "../utility/PasswordUtlility";
 import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtp, onRequestOtp, verifyOtp } from "../utility";
+import { Food, Order } from "../models";
 
 export const CustomerSignup = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -43,6 +44,7 @@ export const CustomerSignup = async (req: Request, res: Response, next: NextFunc
         lastname: '',
         addresss: '',
         verified: false,
+        orders: []
     })
 
     if (result) {
@@ -209,4 +211,170 @@ export const EditCustomerProfile = async (req: Request, res: Response, next: Nex
     }
 
     return res.status(400).json({message: "error with profile update"})
+}
+
+export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
+    
+    // grab current login customer
+    
+    const customer = req.user
+
+    if(customer) {
+        // create an order ID
+    
+        const orderId = randomNum(8, 'hex')
+        
+        const profile = await Customer.findById(customer.__id)
+        // grab order item from request [ {id: XX, unit: XX}]
+    
+        const cart = <[OrderInputs]>req.body
+        let cartitems = Array()
+        let netAmount = 0.0
+
+        // Calculate Order amount
+        const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec()
+
+        foods.map(food => {
+            cart.map(({_id, unit}) => {
+                if(food._id == _id) {
+                    netAmount += (food.price * unit)
+                    cartitems.push({food, unit})
+                }
+            })
+        })
+
+        // Calculate Order with Item Description
+        if(cartitems) {
+            // create order
+
+            const currentOrder = await Order.create({
+                orderId: orderId,
+                items: cartitems,
+                totalAmount: netAmount,
+                orderDate: new Date(),
+                paidThrough: 'COD',
+                paymentResponse: '',
+                orderStatus: 'waiting'
+            })
+
+            if(currentOrder) {
+                profile?.Orders.push(currentOrder)
+                await profile?.save()
+
+                return res.status(200).json(currentOrder)
+            }
+        }
+    
+        // finally update order to user account
+
+    }
+
+    return res.status(400).json({message: "Error with create order"})
+}
+
+export const GetOrder = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user
+
+    if(customer) {
+        const profile = await Customer.findById(customer.__id).populate('Orders')
+
+        if(profile) {
+            return res.status(200).send(profile.Orders)
+        }
+    }
+    return res.status(400).json({message: "Error with get order"})
+}
+
+export const GetOrderById = async (req: Request, res: Response, next: NextFunction) => {
+    const orderId = req.params.id
+
+    if(orderId) {
+        const order = await Order.findById(orderId).populate('items.food')
+
+        if(order) {
+            return res.status(200).send(order)
+        }
+    }
+    return res.status(400).json({message: "Error with get order"})
+}
+
+// ------------------------------------------------- Cart Selection
+
+export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user
+
+    if(customer) {
+        
+        const profile = await Customer.findById(customer.__id).populate('cart.food')
+        let cartitems = Array()
+
+        const {_id, unit} = <OrderInputs>req.body
+        
+        const food = await Food.findById(_id)
+
+        if(food) {
+            if(profile) {
+                cartitems = profile.cart
+
+                if(cartitems.length > 0) {
+                    let existFoodItem = cartitems.filter((item) => item.food._id == _id)
+
+                    if(existFoodItem.length > 0) {
+                        const index = cartitems.indexOf(existFoodItem[0])
+
+                        if(unit > 0) {
+                            cartitems[index] = {food, unit}
+                        } else {
+                            cartitems.splice(index, 1)
+                        }
+                    } else {
+                        cartitems.push({food, unit})
+                    }
+                } else {
+                    cartitems.push({food, unit})
+                }
+
+                if(cartitems) {
+                    profile.cart = cartitems as any
+                    const cartResult = await profile.save() 
+                    return res.status(200).json(cartResult.cart)
+                }
+            }
+            return res.status(400).json({message: "unable to find profile to add to Cart"})
+        }
+        return res.status(400).json({message: "unable to find food to add to Cart"})
+
+    }
+
+    return res.status(400).json({message: "unable to find customer to add to Cart"})
+}
+
+export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user 
+
+    if(customer) {
+        const profile = await Customer.findById(customer.__id).populate('cart.food')
+
+        if(profile) {
+            return res.status(200).json(profile.cart)
+        }
+    }
+
+    return res.status(400).json({message: "cart is empty"})
+}
+
+export const DeleteCart = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user 
+
+    if(customer) {
+        const profile = await Customer.findById(customer.__id).populate('cart.food')
+
+        if(profile) {
+            profile.cart = [] as any
+            const cartResult = await profile.save()
+            return res.status(200).json(cartResult)
+        }
+    }
+
+    return res.status(400).json({message: "cart is empty"})  
 }
