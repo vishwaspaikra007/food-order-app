@@ -38,3 +38,17 @@ export const ValidateSignature = (req: Request) => {
 export const randomNum = (bit: number, enc: BufferEncoding) => {
     return crypto.randomBytes(bit).toString(enc)
 }
+
+export const getRandom8DigitNumber = () => {
+    // Generate a random 4-byte buffer
+    const buffer = crypto.randomBytes(4);
+    
+    // Convert buffer to a hex string and take the last 8 digits
+    const randomHex = buffer.toString('hex').slice(0, 8);
+    
+    // Convert hex string to an integer
+    const randomNumber = parseInt(randomHex, 16);
+
+    // Ensure the number is exactly 8 digits long by taking modulo 100000000
+    return randomNumber % 100000000;
+}

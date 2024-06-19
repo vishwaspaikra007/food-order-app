@@ -4,7 +4,7 @@ import { findVendor } from "./AdminController";
 import { GenerateSignature, ValidatePassword } from "../utility/PasswordUtlility";
 import { hasOnlyExpressionInitializer } from "typescript";
 import { createFoodInputs } from "../dto/Food.dto";
-import { Food, FoodDoc, Vendor } from "../models";
+import { Food, FoodDoc, Order, Vendor } from "../models";
 
 export const VendorLogin = async (req: Request, res: Response, next: NextFunction) => {
     const {email, password} = <VendorLoginInputs>req.body
@@ -166,3 +166,69 @@ export const GetFood = async (req: Request, res: Response, next: NextFunction) =
     
     return res.json({message: "Food information not found"})
 }   
+
+export const GetCurrentOrders = async (req: Request, res: Response, next: NextFunction) => {
+
+    const user = req.user
+
+    if(user) {
+        const orders = await Order.find({vendorId: user.__id}).populate('items.food')
+
+        if(orders) {
+            return res.status(200).json(orders)
+        }
+    }
+
+    return res.status(400).json({message: "order not found"})
+}
+
+export const GetOrderDetails = async (req: Request, res: Response, next: NextFunction) => {
+
+    const orderId = req.params.id
+
+    if(orderId) {
+        const order = await Order.findById(orderId).populate('items.food')
+
+        if(order) {
+            return res.status(200).json(order)
+        }
+    }
+
+    return res.status(400).json({message: "order not found"})
+}
+
+export const ProcessOrder = async (req: Request, res: Response, next: NextFunction) => {
+
+    const orderId = req.params.id
+
+    const { status, remark, time } = req.body
+
+    if(orderId) {
+        const order = await Order.findById(orderId).populate('items.food')
+        
+        if(order) {
+            order.orderStatus  = status
+            order.remarks = remark
+            if(time) order.readyTime = time
+
+            const orderResult = await order.save()
+
+            if(orderResult) {
+                return res.status(200).json(orderResult)
+            }
+        }
+    }
+    return res.status(400).json({message: "unable to process order"})
+}
+
+export const GetOffers = async (req: Request, res: Response, next: NextFunction) => {
+
+}
+
+export const AddOffer = async (req: Request, res: Response, next: NextFunction) => {
+    
+}
+
+export const EditOffer = async (req: Request, res: Response, next: NextFunction) => {
+    
+}

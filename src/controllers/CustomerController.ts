@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { plainToClass } from "class-transformer";
 import { validate, ValidationError } from "class-validator";
 import { CreateCustomInputs, EditCustomProfileInputs, OrderInputs, UserLoginInputs } from "../dto/Customer.dto";
-import { GeneratePassword, GenerateSalt, GenerateSignature, randomNum, ValidatePassword } from "../utility/PasswordUtlility";
+import { GeneratePassword, GenerateSalt, GenerateSignature, getRandom8DigitNumber, randomNum, ValidatePassword } from "../utility/PasswordUtlility";
 import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtp, onRequestOtp, verifyOtp } from "../utility";
 import { Food, Order } from "../models";
@@ -81,19 +81,19 @@ export const CustomerLogin = async (req: Request, res: Response, next: NextFunct
 
     const loginInputs = plainToClass(UserLoginInputs, req.body)
 
-    const loginErrors = await validate(loginInputs, { validationError: {target: true}})
-    if(loginErrors.length > 0) {
+    const loginErrors = await validate(loginInputs, { validationError: { target: true } })
+    if (loginErrors.length > 0) {
         return res.status(400).json(loginErrors)
     }
 
-    const {email, password} = loginInputs
+    const { email, password } = loginInputs
 
-    const customer = await Customer.findOne({email: email})
+    const customer = await Customer.findOne({ email: email })
 
-    if(customer) {
+    if (customer) {
         const validation = await ValidatePassword(password, customer.password, customer.salt)
-        
-        if(validation) {
+
+        if (validation) {
             const signature = GenerateSignature({
                 __id: customer._id as string,
                 email: customer.email,
@@ -110,7 +110,7 @@ export const CustomerLogin = async (req: Request, res: Response, next: NextFunct
         }
     }
 
-    return res.status(400).json({message: "error with login"})
+    return res.status(400).json({ message: "error with login" })
 
 }
 
@@ -127,7 +127,7 @@ export const CustomerVerify = async (req: Request, res: Response, next: NextFunc
 
             if (isVerified == true) {
                 profile.verified = true
-                
+
                 const updatedCustomerResponse = await profile.save()
 
                 const signature = GenerateSignature({
@@ -145,16 +145,16 @@ export const CustomerVerify = async (req: Request, res: Response, next: NextFunc
         }
     }
 
-    return res.status(400).json({message: "error with OTP request"})
+    return res.status(400).json({ message: "error with OTP request" })
 }
 
 export const RequestOtp = async (req: Request, res: Response, next: NextFunction) => {
     const customer = req.user
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id)
 
-        if(profile) {
+        if (profile) {
             try {
                 await onRequestOtp(profile.phone)
             } catch (err) {
@@ -162,7 +162,7 @@ export const RequestOtp = async (req: Request, res: Response, next: NextFunction
                 return res.status(400).send({ message: "error in signup" })
             }
 
-            res.status(200).json({message: "Otp sent to your registered phone"})
+            res.status(200).json({ message: "Otp sent to your registered phone" })
         }
     }
 }
@@ -171,16 +171,16 @@ export const GetCustomerProfile = async (req: Request, res: Response, next: Next
 
     const customer = req.user
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id)
-        
-        if(profile) {
+
+        if (profile) {
 
             return res.status(200).json(profile)
         }
     }
 
-    return res.status(400).json({message: "error with fetch profile"})
+    return res.status(400).json({ message: "error with fetch profile" })
 }
 
 export const EditCustomerProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -189,18 +189,18 @@ export const EditCustomerProfile = async (req: Request, res: Response, next: Nex
 
     const profileInputs = plainToClass(EditCustomProfileInputs, req.body)
 
-    const loginErrors = await validate(profileInputs, { validationError: {target: true}})
+    const loginErrors = await validate(profileInputs, { validationError: { target: true } })
 
-    if(loginErrors.length > 0) {
+    if (loginErrors.length > 0) {
         return res.status(400).json(loginErrors)
     }
 
-    const {firstName, lastName, address} = profileInputs
+    const { firstName, lastName, address } = profileInputs
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id)
-        
-        if(profile) {
+
+        if (profile) {
             profile.firstName = firstName
             profile.lastname = lastName
             profile.addresss = address
@@ -210,92 +210,106 @@ export const EditCustomerProfile = async (req: Request, res: Response, next: Nex
         }
     }
 
-    return res.status(400).json({message: "error with profile update"})
+    return res.status(400).json({ message: "error with profile update" })
 }
 
 export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
-    
+
     // grab current login customer
-    
+
     const customer = req.user
 
-    if(customer) {
+    if (customer) {
         // create an order ID
-    
-        const orderId = randomNum(8, 'hex')
-        
+
+        // const orderId = randomNum(8, 'hex')
+        const orderId = getRandom8DigitNumber()
+
         const profile = await Customer.findById(customer.__id)
-        // grab order item from request [ {id: XX, unit: XX}]
-    
-        const cart = <[OrderInputs]>req.body
-        let cartitems = Array()
-        let netAmount = 0.0
 
-        // Calculate Order amount
-        const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec()
+        if (profile) {
+            // grab order item from request [ {id: XX, unit: XX}]
 
-        foods.map(food => {
-            cart.map(({_id, unit}) => {
-                if(food._id == _id) {
-                    netAmount += (food.price * unit)
-                    cartitems.push({food, unit})
+            const cart = <[OrderInputs]>req.body
+            let cartitems = Array()
+            let netAmount = 0.0
+
+            // Calculate Order amount
+            const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec()
+            let vendorId
+
+            foods.map(food => {
+                cart.map(({ _id, unit }) => {
+                    if (food._id == _id) {
+                        vendorId = food.vendorId
+                        netAmount += (food.price * unit)
+                        cartitems.push({ food, unit })
+                    }
+                })
+            })
+
+            // Calculate Order with Item Description
+            if (cartitems) {
+                // create order
+
+                const currentOrder = await Order.create({
+                    orderId: orderId,
+                    vendorId: vendorId,
+                    items: cartitems,
+                    totalAmount: netAmount,
+                    orderDate: new Date(),
+                    paidThrough: 'COD',
+                    paymentResponse: '',
+                    orderStatus: 'waiting',
+                    remarks: '',
+                    deliveryId: '',
+                    appliedOffer: false,
+                    offerId: null,
+                    readyTime: 45,
+                })
+
+                if (currentOrder) {
+                    profile.cart = [] as any;
+                    profile.Orders.push(currentOrder)
+                    await profile?.save()
+
+                    return res.status(200).json(currentOrder)
                 }
-            })
-        })
-
-        // Calculate Order with Item Description
-        if(cartitems) {
-            // create order
-
-            const currentOrder = await Order.create({
-                orderId: orderId,
-                items: cartitems,
-                totalAmount: netAmount,
-                orderDate: new Date(),
-                paidThrough: 'COD',
-                paymentResponse: '',
-                orderStatus: 'waiting'
-            })
-
-            if(currentOrder) {
-                profile?.Orders.push(currentOrder)
-                await profile?.save()
-
-                return res.status(200).json(currentOrder)
             }
         }
-    
+
+
         // finally update order to user account
 
     }
 
-    return res.status(400).json({message: "Error with create order"})
+    return res.status(400).json({ message: "Error with create order" })
 }
 
 export const GetOrder = async (req: Request, res: Response, next: NextFunction) => {
     const customer = req.user
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id).populate('Orders')
 
-        if(profile) {
+        if (profile) {
             return res.status(200).send(profile.Orders)
         }
     }
-    return res.status(400).json({message: "Error with get order"})
+    return res.status(400).json({ message: "Error with get order" })
 }
 
 export const GetOrderById = async (req: Request, res: Response, next: NextFunction) => {
     const orderId = req.params.id
 
-    if(orderId) {
+    if (orderId) {
         const order = await Order.findById(orderId).populate('items.food')
 
-        if(order) {
+        if (order) {
             return res.status(200).send(order)
         }
     }
-    return res.status(400).json({message: "Error with get order"})
+    return res.status(400).json({ message: "Error with get order" })
 }
 
 // ------------------------------------------------- Cart Selection
@@ -303,78 +317,78 @@ export const GetOrderById = async (req: Request, res: Response, next: NextFuncti
 export const AddToCart = async (req: Request, res: Response, next: NextFunction) => {
     const customer = req.user
 
-    if(customer) {
-        
+    if (customer) {
+
         const profile = await Customer.findById(customer.__id).populate('cart.food')
         let cartitems = Array()
 
-        const {_id, unit} = <OrderInputs>req.body
-        
+        const { _id, unit } = <OrderInputs>req.body
+
         const food = await Food.findById(_id)
 
-        if(food) {
-            if(profile) {
+        if (food) {
+            if (profile) {
                 cartitems = profile.cart
 
-                if(cartitems.length > 0) {
+                if (cartitems.length > 0) {
                     let existFoodItem = cartitems.filter((item) => item.food._id == _id)
 
-                    if(existFoodItem.length > 0) {
+                    if (existFoodItem.length > 0) {
                         const index = cartitems.indexOf(existFoodItem[0])
 
-                        if(unit > 0) {
-                            cartitems[index] = {food, unit}
+                        if (unit > 0) {
+                            cartitems[index] = { food, unit }
                         } else {
                             cartitems.splice(index, 1)
                         }
                     } else {
-                        cartitems.push({food, unit})
+                        cartitems.push({ food, unit })
                     }
                 } else {
-                    cartitems.push({food, unit})
+                    cartitems.push({ food, unit })
                 }
 
-                if(cartitems) {
+                if (cartitems) {
                     profile.cart = cartitems as any
-                    const cartResult = await profile.save() 
+                    const cartResult = await profile.save()
                     return res.status(200).json(cartResult.cart)
                 }
             }
-            return res.status(400).json({message: "unable to find profile to add to Cart"})
+            return res.status(400).json({ message: "unable to find profile to add to Cart" })
         }
-        return res.status(400).json({message: "unable to find food to add to Cart"})
+        return res.status(400).json({ message: "unable to find food to add to Cart" })
 
     }
 
-    return res.status(400).json({message: "unable to find customer to add to Cart"})
+    return res.status(400).json({ message: "unable to find customer to add to Cart" })
 }
 
 export const GetCart = async (req: Request, res: Response, next: NextFunction) => {
-    const customer = req.user 
+    const customer = req.user
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id).populate('cart.food')
 
-        if(profile) {
+        if (profile) {
             return res.status(200).json(profile.cart)
         }
     }
 
-    return res.status(400).json({message: "cart is empty"})
+    return res.status(400).json({ message: "cart is empty" })
 }
 
 export const DeleteCart = async (req: Request, res: Response, next: NextFunction) => {
-    const customer = req.user 
+    const customer = req.user
 
-    if(customer) {
+    if (customer) {
         const profile = await Customer.findById(customer.__id).populate('cart.food')
 
-        if(profile) {
+        if (profile) {
             profile.cart = [] as any
             const cartResult = await profile.save()
             return res.status(200).json(cartResult)
         }
     }
 
-    return res.status(400).json({message: "cart is empty"})  
+    return res.status(400).json({ message: "cart is empty" })
 }

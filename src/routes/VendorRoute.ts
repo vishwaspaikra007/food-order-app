@@ -1,5 +1,5 @@
 import express from 'express'
-import { AddFood, GetFood, GetVendorProfile, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin } from '../controllers'
+import { AddFood, GetCurrentOrders, GetFood, GetOrderDetails, GetVendorProfile, ProcessOrder, UpdateVendorCoverImage, UpdateVendorProfile, UpdateVendorService, VendorLogin } from '../controllers'
 import { Authenticate } from '../middlewares'
 import multer from 'multer'
 
@@ -33,9 +33,16 @@ router.get('/food', GetFood)
 
 // Orders
 
-router.get('/orders')
-router.put('/orders/:id/process')
-router.get('/orders/:id')
+router.get('/orders', GetCurrentOrders)
+router.put('/order/:id/process', ProcessOrder)
+router.get('/order/:id', GetOrderDetails)
+
+
+// Offers
+router.get('/offers')
+router.post('/offer')
+router.put('/offer/:id')
+
 
 router.get('/', (req, res, next) => {
     res.json({message: "vendor block"})
