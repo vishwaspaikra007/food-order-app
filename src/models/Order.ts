@@ -4,15 +4,12 @@ export interface OrderDoc extends Document {
     orderId: string, // 4567887
     vendorId: string,
     items: [any], // [{food, untit: 1}]
-    totalAmount: Number, // 345
+    totalAmount: number, // 345
+    paidAmount: number,
     orderDate: Date,
-    paidThrough: string, // COD, credit card, wallet
-    paymentResponses: string // {status: true, response: some bank response}
     orderStatus: string // to determine current status :- waiting, failed, ACCEPT, REJECT, UNDER-PROCESS, READY
     remarks: string
     deliveryId: string
-    appliedOffer: boolean
-    offerId: string
     readyTime: number // max 60 minutes
 } 
 
@@ -26,14 +23,11 @@ const OrderSchema = new Schema({
         }
     ], 
     totalAmount: Number, 
+    paidAmount: Number,
     orderDate: Date,
-    paidThrough: {type: String}, 
-    paymentResponses: {type: String}, 
     orderStatus: {type: String},
     remarks: {type: String},
     deliveryId: {type: String},
-    appliedOffer: {type: Boolean},
-    offerId: {type: String},
     readyTime: {type: Number}
 }, {
     toJSON: {

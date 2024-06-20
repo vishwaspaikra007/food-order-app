@@ -42,7 +42,7 @@ router.get('/offer/verify/:id', VerifyOffer)
 
 // payment
 
-// router.post('create-payment', CreatePayment)
+router.post('/create-payment', CreatePayment)
 
 // order
 

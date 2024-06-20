@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 import { CreateVendorInput } from '../dto'
-import { Vendor } from '../models'
+import { Transaction, Vendor } from '../models'
 import { GeneratePassword, GenerateSalt } from '../utility/PasswordUtlility'
 
 export const createVendor = async (req: Request, res: Response, next: NextFunction) => {
@@ -66,4 +66,25 @@ export const getVendorById = async (req: Request, res: Response, next: NextFunct
     }
 
     return res.json({response: `no user with given ID: ${vendorID}`})
+}
+
+export const GetTransactions = async (req: Request, res: Response, next: NextFunction) => {
+    const transactions = await Transaction.find()
+
+    if(transactions) {
+        return res.status(200).json(transactions)
+    }
+
+    return res.status(404).json({message: "transactions not found"})
+}
+
+export const GetTransactionById = async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    const transaction = await Transaction.findById(id)
+
+    if(transaction) {
+        return res.status(200).json(transaction)
+    }
+
+    return res.status(404).json({message: "transaction not found"})
 }

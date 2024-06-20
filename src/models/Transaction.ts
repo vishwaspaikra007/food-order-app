@@ -1,46 +1,29 @@
 import mongoose, { Schema, Document, Model} from "mongoose";
 
-interface TransactionDoc extends Document {
-    name: string,
-    ownerName: string
-    foodType: [string]
-    pincode: string
-    address: string
-    phone: string
-    email: string
-    password: string
-    salt: string
-    serviceAvailable: boolean
-    coverImages: [string]
-    rating: number
-    foods: any
+export interface TransactionDoc extends Document {
+    customer: string,
+    vendorId: string
+    orderID: string
+    orderValue: number
+    offerUsed: string
+    status: string
+    paymentMode: string
+    paymentResponse: string
 }
 
 const TransactionSchema = new Schema({
-    name: {type: String, required: true},
-    ownerName: {type: String, required: true},
-    foodType: {type: [String]},
-    pincode: {type: String, required: true},
-    address: {type: String},
-    phone: {type: String, required: true},
-    email: {type: String, required: true},
-    password: {type: String, required: true},
-    salt: {type: String, required: true},
-    serviceAvailable: {type: Boolean, default: true},
-    coverImages: {type: [String]},
-    rating: {type: Number},
-    foods: [{
-        type: mongoose.SchemaTypes.ObjectId,
-        ref: "food"
-    }]
+    customer: {type: String},
+    vendorId: {type: String},
+    orderID: {type: String},
+    orderValue: {type: Number},
+    offerUsed: {type: String},
+    status: {type: String},
+    paymentMode: {type: String},
+    paymentResponse: {type: String},
 }, {
     toJSON: {
         transform(doc, ret) {
-            delete ret.password;
-            delete ret.salt;
             delete ret.__v;
-            delete ret.createdAt;
-            delete ret.updatedAt;
         }
     },
     timestamps: true

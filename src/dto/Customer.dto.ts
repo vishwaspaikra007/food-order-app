@@ -40,7 +40,14 @@ export interface CustomerPayload {
     verified: boolean
 }
 
-export interface OrderInputs {
+export interface CartItems {
     _id: string
     unit: number
+}
+
+export interface OrderInputs {
+    
+    txnId: string
+    amount: string
+    items: [CartItems]
 }
