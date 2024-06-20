@@ -5,7 +5,7 @@ import { CreateCustomInputs, EditCustomProfileInputs, OrderInputs, UserLoginInpu
 import { GeneratePassword, GenerateSalt, GenerateSignature, getRandom8DigitNumber, randomNum, ValidatePassword } from "../utility/PasswordUtlility";
 import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtp, onRequestOtp, verifyOtp } from "../utility";
-import { Food, Order } from "../models";
+import { Food, Offer, Order } from "../models";
 
 export const CustomerSignup = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -391,4 +391,56 @@ export const DeleteCart = async (req: Request, res: Response, next: NextFunction
     }
 
     return res.status(400).json({ message: "cart is empty" })
+}
+
+export const VerifyOffer = async (req: Request, res: Response, next: NextFunction) => {
+
+    const offerId = req.params.id
+    const customer = req.user
+
+    if(customer) {
+        const appliedOffer = await Offer.findById(offerId)
+
+        if(appliedOffer) {
+
+            if(appliedOffer.promoType === "USER") {
+
+            }
+            else {
+                if(appliedOffer.isActive) {
+                    return res.status(200).json({message: "Offer is valid", offer: appliedOffer})
+                }
+            }
+        }
+
+    }
+
+    return res.status(400).json({message: "offer is not valid"})
+}
+
+export const CreatePayment = async (req: Request, res: Response, next: NextFunction) => {
+    // const customer = req.user
+
+    // if(customer) {
+    //     const { amount, offerId, paymentMode } = req.body
+
+    //     let payableAmount = Number(amount)
+
+    //     if(offerId) {
+
+    //         const appliedOffer = await Offer.findById(offerId)
+
+    //         if(appliedOffer) {
+    //             if(appliedOffer.isActive) {
+    //                 payableAmount = (payableAmount - appliedOffer.offerAmount)
+    //             }
+    //         }
+    //     }
+
+    //     // perform payment gateway charge api call
+
+    //     // create record on transition
+
+    //     // return transaction ID
+    // }
 }
