@@ -71,6 +71,7 @@ export const UpdateVendorProfile = async (req: Request, res: Response, next: Nex
 export const UpdateVendorService = async (req: Request, res: Response, next: NextFunction) => {
 
     const user = req.user
+    const {lat, lng} = req.body
 
     if (user) {
         const existingVendor = await findVendor(user.__id)
@@ -78,7 +79,13 @@ export const UpdateVendorService = async (req: Request, res: Response, next: Nex
         if (existingVendor !== null) {
 
             existingVendor.serviceAvailable = !existingVendor.serviceAvailable
-            const savedResult = await existingVendor.save()
+
+            if(lat && lng) {
+                existingVendor.lat = lat
+                existingVendor.lng = lng
+            }
+
+            const savedResult = await existingVendor.save()  
 
             return res.json(savedResult)
         }

@@ -5,7 +5,7 @@ import { CartItems, CreateCustomInputs, EditCustomProfileInputs, OrderInputs, Us
 import { GeneratePassword, GenerateSalt, GenerateSignature, getRandom8DigitNumber, randomNum, ValidatePassword } from "../utility/PasswordUtlility";
 import { Customer, CustomerDoc } from "../models/Customer";
 import { GenerateOtp, onRequestOtp, verifyOtp } from "../utility";
-import { Food, Offer, Order, Transaction, TransactionDoc } from "../models";
+import { DeliveryUser, Food, Offer, Order, Transaction, TransactionDoc, Vendor } from "../models";
 
 export const CustomerSignup = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -213,6 +213,7 @@ export const EditCustomerProfile = async (req: Request, res: Response, next: Nex
     return res.status(400).json({ message: "error with profile update" })
 }
 
+// valifdate Transaction
 
 const validateTransaction = async (txnId: string) => {
     const currentTransaction = await Transaction.findById(txnId)
@@ -224,6 +225,43 @@ const validateTransaction = async (txnId: string) => {
     }
 
     return {status: false, currentTransaction}
+}
+
+// Delivery Notification
+
+const assignOrderForDelivery = async (orderId: string, vendorId: string) => {
+    // find vendor
+
+    const vendor = await Vendor.findById(vendorId)
+
+    if(vendor) {
+        const areaCode = vendor.pincode
+        const vendorLat = vendor.lat
+        const vendorLng = vendor.lng
+        
+        // find available delivery person
+
+        const deliveryPerson = await DeliveryUser.find({pincode: areaCode, verified: true, isAvailable: true})
+
+        if(deliveryPerson) {
+            console.log(`delivery person: ${deliveryPerson[0]}`)
+            const currentOrder = await Order.findById(orderId)
+
+            if(currentOrder) {
+                // check the nearest delivery person  and assign the order
+
+                // update  delivery ID
+                currentOrder.deliveryId = deliveryPerson[0]._id as string
+                const response = await currentOrder.save()
+
+                console.log(response)
+            }
+        }
+    }
+
+
+
+
 }
 
 export const CreateOrder = async (req: Request, res: Response, next: NextFunction) => {
@@ -284,6 +322,7 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
                     remarks: '',
                     deliveryId: '',
                     readyTime: 45,
+                    txnId: txnId
                 })
 
                 if (currentOrder) {
@@ -297,6 +336,8 @@ export const CreateOrder = async (req: Request, res: Response, next: NextFunctio
     
                         await currentTransaction?.save()
                     }
+                    
+                    if(vendorId) assignOrderForDelivery(currentOrder._id.toString(), vendorId)
 
                     await profile.save()
 
@@ -483,3 +524,4 @@ export const CreatePayment = async (req: Request, res: Response, next: NextFunct
         return res.status(200).json(transaction)
     }
 }
+

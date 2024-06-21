@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 import { CreateVendorInput } from '../dto'
-import { Transaction, Vendor } from '../models'
+import { DeliveryUser, Transaction, Vendor } from '../models'
 import { GeneratePassword, GenerateSalt } from '../utility/PasswordUtlility'
 
 export const createVendor = async (req: Request, res: Response, next: NextFunction) => {
@@ -32,7 +32,9 @@ export const createVendor = async (req: Request, res: Response, next: NextFuncti
         rating: 0,
         serviceAvailable: false,
         coverImages: [],
-        foods: []
+        foods: [],
+        lat: 0,
+        lng: 0,
     })
     console.log("vendor created successflly")
     return res.json(createdVendor)
@@ -87,4 +89,33 @@ export const GetTransactionById = async (req: Request, res: Response, next: Next
     }
 
     return res.status(404).json({message: "transaction not found"})
+}
+
+export const VerifyDeliveryUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { _id, status } = req.body
+    
+    if(_id) {
+        const profile = await DeliveryUser.findById(_id)
+
+        if(profile) {
+            profile.verified = status
+
+            const result = await profile.save()
+
+            return res.status(200).json(result)
+        }
+    }
+
+    return res.status(400).json({message: "Unable to verify delivery user"})
+}
+
+export const GetDeliveryUsers = async (req: Request, res: Response, next: NextFunction) => {
+    
+    const deliveryUsers = await DeliveryUser.find()
+
+    if(deliveryUsers) {
+        return res.status(200).json(deliveryUsers)
+    }
+
+    return res.status(400).json({message: "Unable to get delivery users"})
 }

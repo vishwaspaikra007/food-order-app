@@ -1,5 +1,5 @@
 import express from 'express'
-import { createVendor, GetTransactionById, GetTransactions, getVendorById, getVendors } from '../controllers'
+import { createVendor, GetDeliveryUsers, GetTransactionById, GetTransactions, getVendorById, getVendors, VerifyDeliveryUser } from '../controllers'
 
 const router = express.Router()
 
@@ -9,6 +9,9 @@ router.get('/vendor/:id', getVendorById)
 
 router.get('/transactions', GetTransactions)
 router.get('/transaction/:id', GetTransactionById)
+
+router.put('/delivery/verify', VerifyDeliveryUser)
+router.get('/delivery/users', GetDeliveryUsers)
 
 
 router.get('/', (req, res, next) => {
